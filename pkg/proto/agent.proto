@@ -11,6 +11,9 @@ message GetReportResponse {
   bytes report = 1;
 }
 
+message PingMessage {}
+
 service Agent {
   rpc GetReport(GetReportRequest) returns (GetReportResponse) {}
+  rpc Ping(PingMessage) returns (PingMessage) {}
 }

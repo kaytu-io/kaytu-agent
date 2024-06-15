@@ -12,6 +12,10 @@ type AgentServer struct {
 	golang.AgentServer
 }
 
+func (s *AgentServer) Ping(context.Context, *golang.PingMessage) (*golang.PingMessage, error) {
+	return &golang.PingMessage{}, nil
+}
+
 func (s *AgentServer) GetOverview(ctx context.Context, request *golang.GetReportRequest) (*golang.GetReportResponse, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {

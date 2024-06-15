@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Agent_GetReport_FullMethodName = "/kaytu.agent.v1.Agent/GetReport"
+	Agent_Ping_FullMethodName      = "/kaytu.agent.v1.Agent/Ping"
 )
 
 // AgentClient is the client API for Agent service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AgentClient interface {
 	GetReport(ctx context.Context, in *GetReportRequest, opts ...grpc.CallOption) (*GetReportResponse, error)
+	Ping(ctx context.Context, in *PingMessage, opts ...grpc.CallOption) (*PingMessage, error)
 }
 
 type agentClient struct {
@@ -46,11 +48,21 @@ func (c *agentClient) GetReport(ctx context.Context, in *GetReportRequest, opts 
 	return out, nil
 }
 
+func (c *agentClient) Ping(ctx context.Context, in *PingMessage, opts ...grpc.CallOption) (*PingMessage, error) {
+	out := new(PingMessage)
+	err := c.cc.Invoke(ctx, Agent_Ping_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AgentServer is the server API for Agent service.
 // All implementations must embed UnimplementedAgentServer
 // for forward compatibility
 type AgentServer interface {
 	GetReport(context.Context, *GetReportRequest) (*GetReportResponse, error)
+	Ping(context.Context, *PingMessage) (*PingMessage, error)
 	mustEmbedUnimplementedAgentServer()
 }
 
@@ -60,6 +72,9 @@ type UnimplementedAgentServer struct {
 
 func (UnimplementedAgentServer) GetReport(context.Context, *GetReportRequest) (*GetReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReport not implemented")
+}
+func (UnimplementedAgentServer) Ping(context.Context, *PingMessage) (*PingMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedAgentServer) mustEmbedUnimplementedAgentServer() {}
 
@@ -92,6 +107,24 @@ func _Agent_GetReport_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Agent_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).Ping(ctx, req.(*PingMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Agent_ServiceDesc is the grpc.ServiceDesc for Agent service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -102,6 +135,10 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetReport",
 			Handler:    _Agent_GetReport_Handler,
+		},
+		{
+			MethodName: "Ping",
+			Handler:    _Agent_Ping_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
