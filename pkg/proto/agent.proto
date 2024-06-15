@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package kaytu.agent.v1;
+option go_package="github.com/kaytu-io/kaytu-agent/proto/src/golang";
+import "google/protobuf/wrappers.proto";
+
+message GetReportRequest {
+  string command =1 ;
+}
+message GetReportResponse {
+  bytes report = 1;
+}
+
+service Agent {
+  rpc GetReport(GetReportRequest) returns (GetReportResponse) {}
+}
