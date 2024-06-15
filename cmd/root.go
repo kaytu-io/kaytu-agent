@@ -37,7 +37,10 @@ var rootCmd = &cobra.Command{
 
 		logger.Info("starting scheduler")
 		scheduler := scheduler.New(kc, logger)
-		scheduler.Start()
+		err = scheduler.Start()
+		if err != nil {
+			return err
+		}
 
 		grpcServer := grpc.NewServer()
 		handler := server.AgentServer{}

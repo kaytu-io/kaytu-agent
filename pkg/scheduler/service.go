@@ -18,13 +18,19 @@ func New(kaytuCmd *kaytuCmd.KaytuCmd, logger *zap.Logger) *Service {
 	}
 }
 
-func (s *Service) Start() {
-	if s.kaytuCmd.LatestOptimization() == nil {
+func (s *Service) Start() error {
+	opt, err := s.kaytuCmd.LatestOptimization()
+	if err != nil {
+		return err
+	}
+	if opt == nil {
 		go s.Trigger()
 	}
 	c := cron.New()
 	c.AddFunc("0 30 1 * * *", func() { go s.Trigger() })
 	c.Start()
+
+	return nil
 }
 
 func (s *Service) Trigger() {

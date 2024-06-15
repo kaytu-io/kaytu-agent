@@ -32,7 +32,7 @@ func (c *KaytuCmd) Optimize(command string) error {
 		return err
 	}
 
-	cmd := exec.Command("kaytu", "optimize", command, "--output", "json")
+	cmd := exec.Command("kaytu", "optimize", command, "--output", "json", "--observabilityDays", "14")
 	cmd.Stderr = os.Stderr
 
 	outRC, err := cmd.StdoutPipe()
@@ -66,8 +66,8 @@ func (c *KaytuCmd) Optimize(command string) error {
 	return os.Rename(dirtyPath, cleanPath)
 }
 
-func (c *KaytuCmd) LatestOptimization() *Optimization {
-	return nil
+func (c *KaytuCmd) LatestOptimization() (*Optimization, error) {
+	return &Optimization{}, nil //TODO-Saleh
 }
 
 func (c *KaytuCmd) Install() error {

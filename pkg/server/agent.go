@@ -16,7 +16,7 @@ func (s *AgentServer) Ping(context.Context, *golang.PingMessage) (*golang.PingMe
 	return &golang.PingMessage{}, nil
 }
 
-func (s *AgentServer) GetOverview(ctx context.Context, request *golang.GetReportRequest) (*golang.GetReportResponse, error) {
+func (s *AgentServer) GetReport(ctx context.Context, request *golang.GetReportRequest) (*golang.GetReportResponse, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
