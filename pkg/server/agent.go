@@ -3,13 +3,16 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-agent/pkg/proto/src/golang"
 	"os"
 	"path/filepath"
+
+	"github.com/kaytu-io/kaytu-agent/config"
+	"github.com/kaytu-io/kaytu-agent/pkg/proto/src/golang"
 )
 
 type AgentServer struct {
 	golang.AgentServer
+	cfg *config.Config
 }
 
 func (s *AgentServer) Ping(context.Context, *golang.PingMessage) (*golang.PingMessage, error) {
@@ -17,11 +20,7 @@ func (s *AgentServer) Ping(context.Context, *golang.PingMessage) (*golang.PingMe
 }
 
 func (s *AgentServer) GetReport(ctx context.Context, request *golang.GetReportRequest) (*golang.GetReportResponse, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	path := filepath.Join(home, ".kaytu", fmt.Sprintf("out-%s.json", request.Command))
+	path := filepath.Join(s.cfg.GetOutputDirectory(), fmt.Sprintf("out-%s.json", request.Command))
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

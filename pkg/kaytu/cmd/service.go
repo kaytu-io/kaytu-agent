@@ -2,53 +2,61 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	githubAPI "github.com/google/go-github/v62/github"
-	"github.com/rogpeppe/go-internal/semver"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
 	"time"
+
+	githubAPI "github.com/google/go-github/v62/github"
+	"github.com/kaytu-io/kaytu-agent/config"
+	"github.com/rogpeppe/go-internal/semver"
+	"go.uber.org/zap"
 )
 
 type KaytuCmd struct {
 	logger *zap.Logger
+	cfg    *config.Config
 }
 
-func New(logger *zap.Logger) *KaytuCmd {
+func New(logger *zap.Logger, cfg *config.Config) *KaytuCmd {
 	return &KaytuCmd{
 		logger: logger,
+		cfg:    cfg,
 	}
 }
 
-func (c *KaytuCmd) Optimize(command string) error {
-	home, err := os.UserHomeDir()
-	if err != nil {
+func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
+	if err := ctx.Err(); err != nil {
+		c.logger.Error("context error", zap.Error(err))
 		return err
 	}
 
-	ops, err := os.ReadFile(path.Join(home, ".kaytu", "optimizations.json"))
+	kaytuWorkingDir := c.cfg.WorkingDirectory
+	kaytuOutputDir := c.cfg.GetOutputDirectory()
+	err := os.MkdirAll(kaytuWorkingDir, os.ModePerm)
 	if err != nil {
-		if !strings.Contains(err.Error(), "not found") {
-			return err
-		}
+		c.logger.Error("failed to create kaytu working directory", zap.Error(err))
+		return err
 	}
-
-	var opConfig OptimizationsConfig
-	err = json.Unmarshal(ops, &opConfig)
+	err = os.MkdirAll(kaytuOutputDir, os.ModePerm)
 	if err != nil {
+		c.logger.Error("failed to create kaytu output directory", zap.Error(err))
 		return err
 	}
 
-	cmd := exec.Command("kaytu", "optimize", command, "--output", "json", "--observabilityDays", "14")
+	dbConfig, err := OpenDBConfig(ctx, c.logger, c.cfg)
+	if err != nil {
+		c.logger.Error("failed to open db config", zap.Error(err))
+		return err
+	}
+
+	cmd := exec.CommandContext(ctx, "kaytu", "optimize", command, "--output", "json", "--observabilityDays", "14")
 	cmd.Stderr = os.Stderr
 
 	outRC, err := cmd.StdoutPipe()
@@ -56,8 +64,8 @@ func (c *KaytuCmd) Optimize(command string) error {
 		return err
 	}
 
-	dirtyPath := filepath.Join(home, ".kaytu", fmt.Sprintf("out-%s-dirty.json", command))
-	cleanPath := filepath.Join(home, ".kaytu", fmt.Sprintf("out-%s.json", command))
+	dirtyPath := filepath.Join(c.cfg.GetOutputDirectory(), fmt.Sprintf("out-%s-dirty.json", command))
+	cleanPath := filepath.Join(c.cfg.GetOutputDirectory(), fmt.Sprintf("out-%s.json", command))
 	os.Remove(dirtyPath)
 	f, err := os.OpenFile(dirtyPath, os.O_CREATE|os.O_RDWR, os.ModePerm)
 	if err != nil {
@@ -79,27 +87,23 @@ func (c *KaytuCmd) Optimize(command string) error {
 	}
 
 	exists := false
-	for idx, op := range opConfig.Optimizations {
+	for idx, op := range dbConfig.Optimizations {
 		if op.Command == command {
 			op.LastUpdate = time.Now()
-			opConfig.Optimizations[idx] = op
+			dbConfig.Optimizations[idx] = op
 			exists = true
 			break
 		}
 	}
 	if !exists {
-		opConfig.Optimizations = append(opConfig.Optimizations, Optimization{
+		dbConfig.Optimizations = append(dbConfig.Optimizations, Optimization{
 			Command:    command,
 			LastUpdate: time.Now(),
 		})
 	}
-	ops, err = json.Marshal(opConfig)
-	if err != nil {
-		return err
-	}
 
-	err = os.WriteFile(path.Join(home, ".kaytu", "optimizations.json"), ops, os.ModePerm)
-	if err != nil {
+	if err := UpdateDBConfig(ctx, c.logger, c.cfg, dbConfig); err != nil {
+		c.logger.Error("failed to update db config", zap.Error(err))
 		return err
 	}
 
@@ -107,26 +111,19 @@ func (c *KaytuCmd) Optimize(command string) error {
 	return os.Rename(dirtyPath, cleanPath)
 }
 
-func (c *KaytuCmd) LatestOptimization(command string) (*Optimization, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
+func (c *KaytuCmd) LatestOptimization(ctx context.Context, command string) (*Optimization, error) {
+	if err := ctx.Err(); err != nil {
+		c.logger.Error("context error", zap.Error(err))
 		return nil, err
 	}
 
-	ops, err := os.ReadFile(path.Join(home, ".kaytu", "optimizations.json"))
+	dbConfig, err := OpenDBConfig(ctx, c.logger, c.cfg)
 	if err != nil {
-		if !strings.Contains(err.Error(), "not found") {
-			return nil, err
-		}
-	}
-
-	var opConfig OptimizationsConfig
-	err = json.Unmarshal(ops, &opConfig)
-	if err != nil {
+		c.logger.Error("failed to open db config", zap.Error(err))
 		return nil, err
 	}
 
-	for _, op := range opConfig.Optimizations {
+	for _, op := range dbConfig.Optimizations {
 		if op.Command == command {
 			return &op, nil
 		}
@@ -135,10 +132,17 @@ func (c *KaytuCmd) LatestOptimization(command string) (*Optimization, error) {
 	return nil, nil
 }
 
-func (c *KaytuCmd) Install() error {
+// Install checks if kaytu is installed and installs the latest version if it is outdated.
+// TODO: remove this and pin the version in docker image
+func (c *KaytuCmd) Install(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		c.logger.Error("context error", zap.Error(err))
+		return err
+	}
+
 	shouldInstall := false
 
-	cmd := exec.Command("kaytu", "version")
+	cmd := exec.CommandContext(ctx, "kaytu", "version")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if !strings.Contains(err.Error(), "file not found") {
@@ -186,6 +190,7 @@ func (c *KaytuCmd) Install() error {
 		if err != nil {
 			return err
 		}
+		defer os.Remove("install.sh")
 		defer f.Close()
 
 		_, err = io.Copy(f, resp.Body)
@@ -194,13 +199,13 @@ func (c *KaytuCmd) Install() error {
 		}
 
 		c.logger.Info("installing latest kaytu version")
-		cmd = exec.Command("sh", "./install.sh")
+		cmd = exec.CommandContext(ctx, "sh", "./install.sh")
 		err = cmd.Run()
 		if err != nil {
 			return err
 		}
 
-		return c.Install()
+		return c.Install(ctx)
 	}
 
 	c.logger.Info("kaytu is installed", zap.String("version", version))
