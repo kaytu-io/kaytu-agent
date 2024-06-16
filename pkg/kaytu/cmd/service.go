@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	githubAPI "github.com/google/go-github/v62/github"
 	"github.com/rogpeppe/go-internal/semver"
@@ -10,10 +11,12 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
+	"time"
 )
 
 type KaytuCmd struct {
@@ -28,6 +31,19 @@ func New(logger *zap.Logger) *KaytuCmd {
 
 func (c *KaytuCmd) Optimize(command string) error {
 	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	ops, err := os.ReadFile(path.Join(home, ".kaytu", "optimizations.json"))
+	if err != nil {
+		if !strings.Contains(err.Error(), "not found") {
+			return err
+		}
+	}
+
+	var opConfig OptimizationsConfig
+	err = json.Unmarshal(ops, &opConfig)
 	if err != nil {
 		return err
 	}
@@ -62,12 +78,61 @@ func (c *KaytuCmd) Optimize(command string) error {
 		return err
 	}
 
+	exists := false
+	for idx, op := range opConfig.Optimizations {
+		if op.Command == command {
+			op.LastUpdate = time.Now()
+			opConfig.Optimizations[idx] = op
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		opConfig.Optimizations = append(opConfig.Optimizations, Optimization{
+			Command:    command,
+			LastUpdate: time.Now(),
+		})
+	}
+	ops, err = json.Marshal(opConfig)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(path.Join(home, ".kaytu", "optimizations.json"), ops, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
 	c.logger.Info("optimization finished")
 	return os.Rename(dirtyPath, cleanPath)
 }
 
-func (c *KaytuCmd) LatestOptimization() (*Optimization, error) {
-	return &Optimization{}, nil //TODO-Saleh
+func (c *KaytuCmd) LatestOptimization(command string) (*Optimization, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	ops, err := os.ReadFile(path.Join(home, ".kaytu", "optimizations.json"))
+	if err != nil {
+		if !strings.Contains(err.Error(), "not found") {
+			return nil, err
+		}
+	}
+
+	var opConfig OptimizationsConfig
+	err = json.Unmarshal(ops, &opConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, op := range opConfig.Optimizations {
+		if op.Command == command {
+			return &op, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (c *KaytuCmd) Install() error {
