@@ -8,6 +8,31 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  tag:
+    runs-on: ubuntu-latest
+    environment: golang
+    outputs:
+      latest_tag: ${{ steps.set_latest_tag.outputs.latest_tag }}
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Tag version
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GH_ACCESS_TOKEN }}
+          release_branches: main
+          tag_prefix: v
+      - name: Set latest tag output
+        id: set_latest_tag
+        run: |
+          if [[ -z "${{ steps.tag_version.outputs.new_tag }}" ]]; then
+            echo "latest_tag=${{ steps.tag_version.outputs.previous_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "latest_tag=${{ steps.tag_version.outputs.new_tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
@@ -19,21 +44,39 @@ jobs:
     steps:
         - name: Checkout repository
           uses: actions/checkout@v4
-      # Uses the `docker/login-action` action to log in to the Container registry registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
+      # Uses the `docker/login-action` action to log in to the Container registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
         - name: Log in to the Container registry
-          uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+          uses: docker/login-action@v3
           with:
             registry: ${{ env.REGISTRY }}
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
+        - name: Install musl cc
+          uses: awalsh128/cache-apt-pkgs-action@v1
+          with:
+            packages: musl-tools musl-dev musl
+        - name: Set up Go
+          uses: actions/setup-go@v4
+          with:
+            go-version-file: "./go.mod"
+            cache: false
+        - name: Go Cache
+          uses: actions/cache@v3
+          with:
+            path: |
+              ~/go/pkg/mod
+              ~/.cache/go-build
+            key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+            restore-keys: |
+              ${{ runner.os }}-go-
         - name: Build
           id: build
           run: |
-            GOPRIVATE="github.com/kaytu-io" GOOS=linux GOARCH=amd64 go build -o ./build/ .
+            CC=/usr/bin/musl-gcc GOPRIVATE="github.com/kaytu-io" GOOS=linux GOARCH=amd64 go build -v -ldflags "-linkmode external -extldflags '-static' -s -w" -tags musl -o ./build/ .
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
         - name: Extract metadata (tags, labels) for Docker
           id: meta
-          uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+          uses: docker/metadata-action@v5
           with:
             images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
@@ -41,12 +84,14 @@ jobs:
       # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
         - name: Build and push Docker image
           id: push
-          uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+          uses: docker/build-push-action@v5
           with:
             context: .
             file: deploy/Dockerfile
             push: true
-            tags: ${{ steps.meta.outputs.tags }}
+            tags:
+              - ${{ steps.meta.outputs.tags }}
+              - ${{ steps.tag.latest_tag }}
             labels: ${{ steps.meta.outputs.labels }}
       
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
