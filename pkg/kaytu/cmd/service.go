@@ -56,7 +56,7 @@ func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
 		return err
 	}
 
-	args := []string{"optimize", command, "--output", "json", "--agent-disabled", "false"}
+	args := []string{"optimize", command, "--output", "json", "--agent-disabled", "true"}
 	if c.cfg.KaytuConfig.ObservabilityDays > 0 {
 		args = append(args, "--observabilityDays", fmt.Sprintf("%d", c.cfg.KaytuConfig.ObservabilityDays))
 	}
