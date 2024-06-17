@@ -199,7 +199,9 @@ func (c *KaytuCmd) Install(ctx context.Context) error {
 		}
 
 		c.logger.Info("installing latest kaytu version")
-		cmd = exec.CommandContext(ctx, "sh", "./install.sh")
+		cmd = exec.CommandContext(ctx, "bash", "./install.sh")
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
 		err = cmd.Run()
 		if err != nil {
 			return err
