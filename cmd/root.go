@@ -28,8 +28,8 @@ var rootCmd = &cobra.Command{
 		logger.Info("loading config")
 		cfg := config.Provide(nil, config.DefaultConfig)
 
-		logger.Info("listening on :8001")
-		lis, err := net.Listen("tcp", ":8001")
+		logger.Info(fmt.Sprintf("listening on :%d", cfg.GrpcPort))
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GrpcPort))
 		if err != nil {
 			return err
 		}
