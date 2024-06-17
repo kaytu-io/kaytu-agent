@@ -164,9 +164,8 @@ func (c *KaytuCmd) LatestOptimization(ctx context.Context, command string) (*Opt
 	return nil, nil
 }
 
-// Install checks if kaytu is installed and installs the latest version if it is outdated.
-// TODO: remove this and pin the version in docker image
-func (c *KaytuCmd) Install(ctx context.Context) error {
+// Initialize checks if kaytu is installed and installs the latest version if it is outdated, then logs in to kaytu and installs the kubernetes plugin
+func (c *KaytuCmd) Initialize(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		c.logger.Error("context error", zap.Error(err))
 		return err
@@ -239,16 +238,26 @@ func (c *KaytuCmd) Install(ctx context.Context) error {
 			return err
 		}
 
-		return c.Install(ctx)
+		return c.Initialize(ctx)
 	}
 
-	cmd = exec.CommandContext(ctx, "kaytu", "plugin", "install", "kubernetes")
+	cmd = exec.CommandContext(ctx, "kaytu", "login", "--auth-token", c.cfg.KaytuConfig.AuthToken)
+	c.logger.Info("logging in to kaytu")
 	out, err = cmd.CombinedOutput()
-	c.logger.Info("installing kubernetes plugin", zap.String("output", string(out)))
+	if err != nil {
+		c.logger.Error("failed to login", zap.Error(err), zap.String("output", string(out)))
+		return err
+	}
+	c.logger.Info("logged in to kaytu", zap.String("output", string(out)))
+
+	cmd = exec.CommandContext(ctx, "kaytu", "plugin", "install", "kubernetes")
+	c.logger.Info("installing kubernetes plugin")
+	out, err = cmd.CombinedOutput()
 	if err != nil {
 		c.logger.Error("failed to install kubernetes plugin", zap.Error(err), zap.String("output", string(out)))
 		return err
 	}
+	c.logger.Info("kubernetes plugin is installed", zap.String("output", string(out)))
 
 	c.logger.Info("kaytu is installed", zap.String("version", version))
 	return nil

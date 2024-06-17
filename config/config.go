@@ -20,6 +20,7 @@ type PrometheusConfig struct {
 type KaytuConfig struct {
 	ObservabilityDays int              `json:"observabilityDays" yaml:"observabilityDays" koanf:"observability_days"`
 	Prometheus        PrometheusConfig `json:"prometheus" yaml:"prometheus" koanf:"prometheus"`
+	AuthToken         string           `json:"authToken" yaml:"authToken" koanf:"auth_token"`
 }
 
 type Config struct {

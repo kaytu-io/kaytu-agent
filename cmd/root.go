@@ -36,7 +36,7 @@ var rootCmd = &cobra.Command{
 
 		logger.Info("checking kaytu installation")
 		kc := kaytuCmd.New(logger, &cfg)
-		err = kc.Install(ctx)
+		err = kc.Initialize(ctx)
 		if err != nil {
 			return err
 		}
