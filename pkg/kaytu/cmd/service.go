@@ -240,6 +240,13 @@ func (c *KaytuCmd) Install(ctx context.Context) error {
 		return c.Install(ctx)
 	}
 
+	cmd = exec.CommandContext(ctx, "kaytu", "plugin", "install", "kubernetes")
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		c.logger.Error("failed to install kubernetes plugin", zap.Error(err), zap.String("output", string(out)))
+		return err
+	}
+
 	c.logger.Info("kaytu is installed", zap.String("version", version))
 	return nil
 }
