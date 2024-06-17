@@ -56,7 +56,32 @@ func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
 		return err
 	}
 
-	cmd := exec.CommandContext(ctx, "kaytu", "optimize", command, "--output", "json", "--observabilityDays", "14")
+	args := []string{"optimize", command, "--output", "json", "--agent-disabled", "false"}
+	if c.cfg.KaytuConfig.ObservabilityDays > 0 {
+		args = append(args, "--observabilityDays", fmt.Sprintf("%d", c.cfg.KaytuConfig.ObservabilityDays))
+	}
+	if c.cfg.KaytuConfig.Prometheus.Address != "" {
+		args = append(args, "--prom-address", c.cfg.KaytuConfig.Prometheus.Address)
+	}
+	if c.cfg.KaytuConfig.Prometheus.Username != "" {
+		args = append(args, "--prom-username", c.cfg.KaytuConfig.Prometheus.Username)
+	}
+	if c.cfg.KaytuConfig.Prometheus.Password != "" {
+		args = append(args, "--prom-password", c.cfg.KaytuConfig.Prometheus.Password)
+	}
+	if c.cfg.KaytuConfig.Prometheus.ClientId != "" {
+		args = append(args, "--prom-client-id", c.cfg.KaytuConfig.Prometheus.ClientId)
+	}
+	if c.cfg.KaytuConfig.Prometheus.ClientSecret != "" {
+		args = append(args, "--prom-client-secret", c.cfg.KaytuConfig.Prometheus.ClientSecret)
+	}
+	if c.cfg.KaytuConfig.Prometheus.TokenUrl != "" {
+		args = append(args, "--prom-token-url", c.cfg.KaytuConfig.Prometheus.TokenUrl)
+	}
+	if c.cfg.KaytuConfig.Prometheus.Scopes != "" {
+		args = append(args, "--prom-scopes", c.cfg.KaytuConfig.Prometheus.Scopes)
+	}
+	cmd := exec.CommandContext(ctx, "kaytu", args...)
 	cmd.Stderr = os.Stderr
 
 	outRC, err := cmd.StdoutPipe()
