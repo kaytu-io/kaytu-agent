@@ -32,6 +32,8 @@ func New(logger *zap.Logger, cfg *config.Config) *KaytuCmd {
 }
 
 func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
+	c.logger.Info("running optimization", zap.String("command", command))
+
 	if err := ctx.Err(); err != nil {
 		c.logger.Error("context error", zap.Error(err))
 		return err
@@ -137,7 +139,7 @@ func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
 		return err
 	}
 
-	c.logger.Info("optimization finished")
+	c.logger.Info("optimization finished", zap.String("command", command))
 	return os.Rename(dirtyPath, cleanPath)
 }
 

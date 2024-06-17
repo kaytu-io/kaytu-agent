@@ -27,6 +27,7 @@ func (s *Service) Start(ctx context.Context) error {
 			return err
 		}
 		if opt == nil {
+			s.logger.Info("no previous optimization for command found, triggering optimization cycle", zap.String("command", command))
 			go s.Trigger()
 			break
 		}
@@ -40,6 +41,7 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) Trigger() {
+	s.logger.Info("optimization cycle triggered")
 	ctx := context.Background()
 	commands := []string{"kubernetes-pods", "kubernetes-deployments", "kubernetes-statefulsets", "kubernetes-daemonsets", "kubernetes-jobs"}
 	for _, command := range commands {
