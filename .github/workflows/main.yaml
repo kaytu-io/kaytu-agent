@@ -35,6 +35,7 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
+    needs: tag
     permissions:
       contents: read
       packages: write
@@ -89,9 +90,7 @@ jobs:
             context: .
             file: deploy/Dockerfile
             push: true
-            tags:
-              - ${{ steps.meta.outputs.tags }}
-              - ${{ steps.tag.latest_tag }}
+            tags: ${{ steps.meta.outputs.tags }}
             labels: ${{ steps.meta.outputs.labels }}
       
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
