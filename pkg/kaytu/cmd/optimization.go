@@ -43,6 +43,13 @@ func OpenDBConfig(ctx context.Context, logger *zap.Logger, cfg *config.Config) (
 			logger.Error("failed to marshal db file", zap.Error(err))
 			return nil, err
 		}
+
+		err = os.MkdirAll(cfg.WorkingDirectory, os.ModePerm)
+		if err != nil {
+			logger.Error("failed to create working directory", zap.Error(err))
+			return nil, err
+		}
+
 		err = os.WriteFile(cfg.GetDBFilePath(), dbContent, os.ModePerm)
 		if err != nil {
 			logger.Error("failed to write db file", zap.Error(err))
@@ -84,6 +91,13 @@ func UpdateDBConfig(ctx context.Context, logger *zap.Logger, cfg *config.Config,
 		logger.Error("failed to marshal db file", zap.Error(err))
 		return err
 	}
+
+	err = os.MkdirAll(cfg.WorkingDirectory, os.ModePerm)
+	if err != nil {
+		logger.Error("failed to create working directory", zap.Error(err))
+		return err
+	}
+
 	err = os.WriteFile(cfg.GetDBFilePath(), dbContent, os.ModePerm)
 	if err != nil {
 		logger.Error("failed to write db file", zap.Error(err))

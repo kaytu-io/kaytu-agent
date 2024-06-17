@@ -64,6 +64,11 @@ func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
 		return err
 	}
 
+	err = os.MkdirAll(kaytuOutputDir, os.ModePerm)
+	if err != nil {
+		c.logger.Error("failed to create output directory", zap.Error(err))
+		return err
+	}
 	dirtyPath := filepath.Join(c.cfg.GetOutputDirectory(), fmt.Sprintf("out-%s-dirty.json", command))
 	cleanPath := filepath.Join(c.cfg.GetOutputDirectory(), fmt.Sprintf("out-%s.json", command))
 	os.Remove(dirtyPath)
