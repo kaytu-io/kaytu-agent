@@ -15,6 +15,12 @@ type AgentServer struct {
 	cfg *config.Config
 }
 
+func NewAgentServer(cfg *config.Config) *AgentServer {
+	return &AgentServer{
+		cfg: cfg,
+	}
+}
+
 func (s *AgentServer) Ping(context.Context, *golang.PingMessage) (*golang.PingMessage, error) {
 	return &golang.PingMessage{}, nil
 }

@@ -48,9 +48,12 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		grpcServer := grpc.NewServer()
-		handler := server.AgentServer{}
-		golang.RegisterAgentServer(grpcServer, &handler)
+		grpcServer := grpc.NewServer(
+			grpc.MaxRecvMsgSize(64*1024*1024),
+			grpc.MaxSendMsgSize(64*1024*1024),
+		)
+		handler := server.NewAgentServer(&cfg)
+		golang.RegisterAgentServer(grpcServer, handler)
 		logger.Info("starting grpc server")
 		return grpcServer.Serve(lis)
 	},
