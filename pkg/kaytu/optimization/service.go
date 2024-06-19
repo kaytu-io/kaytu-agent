@@ -1,6 +1,7 @@
 package optimization
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu/controller"
@@ -14,7 +15,7 @@ import (
 	"time"
 )
 
-func InstallPlugins() error {
+func InstallPlugins(ctx context.Context) error {
 	manager := plugin.New()
 	err := manager.StartServer()
 	if err != nil {
@@ -24,7 +25,7 @@ func InstallPlugins() error {
 
 	version.VERSION = "99.99.99" //TODO-fix this
 
-	err = manager.Install("kubernetes", "", false, false)
+	err = manager.Install(ctx, "kubernetes", "", false, false)
 	if err != nil {
 		return err
 	}
@@ -33,7 +34,7 @@ func InstallPlugins() error {
 	return nil
 }
 
-func Run(command string, pref []*golang.PreferenceItem) ([]view.PluginResult, error) {
+func Run(ctx context.Context, command string, pref []*golang.PreferenceItem) ([]view.PluginResult, error) {
 	cfg, err := server.GetConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config due to %v", err)
@@ -46,7 +47,7 @@ func Run(command string, pref []*golang.PreferenceItem) ([]view.PluginResult, er
 		return nil, fmt.Errorf("failed to start server due to %v", err)
 	}
 
-	err = manager.StartPlugin(command)
+	err = manager.StartPlugin(ctx, command)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start plugin due to %v", err)
 	}

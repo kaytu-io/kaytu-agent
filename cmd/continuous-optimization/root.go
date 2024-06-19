@@ -20,6 +20,8 @@ import (
 var rootCmd = &cobra.Command{
 	Use: "kaytu-agent",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+
 		gitURL := cmd.Flag("git-url").Value.String()
 		gitBranch := cmd.Flag("git-branch").Value.String()
 		gitUsername := cmd.Flag("git-username").Value.String()
@@ -50,12 +52,12 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		err = optimization.InstallPlugins()
+		err = optimization.InstallPlugins(ctx)
 		if err != nil {
 			return err
 		}
 
-		_, err = optimization.Run("kubernetes-deployments", nil)
+		_, err = optimization.Run(ctx, "kubernetes-deployments", nil)
 		if err != nil {
 			return err
 		}
