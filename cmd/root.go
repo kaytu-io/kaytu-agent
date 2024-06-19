@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"math"
 	"net"
 	"os"
 )
@@ -49,8 +50,8 @@ var rootCmd = &cobra.Command{
 		}
 
 		grpcServer := grpc.NewServer(
-			grpc.MaxRecvMsgSize(64*1024*1024),
-			grpc.MaxSendMsgSize(64*1024*1024),
+			grpc.MaxRecvMsgSize(128*1024*1024),
+			grpc.MaxSendMsgSize(math.MaxInt),
 		)
 		handler := server.NewAgentServer(&cfg)
 		golang.RegisterAgentServer(grpcServer, handler)
