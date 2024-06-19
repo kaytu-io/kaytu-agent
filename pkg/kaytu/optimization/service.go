@@ -40,7 +40,7 @@ func Run(command string, pref []*golang.PreferenceItem) ([]view.PluginResult, er
 	}
 
 	manager := plugin.New()
-	manager.SetNonInteractiveView()
+	manager.SetNonInteractiveView(true)
 	err = manager.StartServer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start server due to %v", err)
