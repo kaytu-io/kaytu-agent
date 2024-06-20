@@ -241,15 +241,6 @@ func (c *KaytuCmd) Initialize(ctx context.Context) error {
 		return c.Initialize(ctx)
 	}
 
-	cmd = exec.CommandContext(ctx, "kaytu", "login", "--api-key", c.cfg.KaytuConfig.ApiKey)
-	c.logger.Info("logging in to kaytu")
-	out, err = cmd.CombinedOutput()
-	if err != nil {
-		c.logger.Error("failed to login", zap.Error(err), zap.String("output", string(out)))
-		return err
-	}
-	c.logger.Info("logged in to kaytu", zap.String("output", string(out)))
-
 	cmd = exec.CommandContext(ctx, "kaytu", "plugin", "install", "kubernetes")
 	c.logger.Info("installing kubernetes plugin")
 	out, err = cmd.CombinedOutput()
@@ -258,6 +249,15 @@ func (c *KaytuCmd) Initialize(ctx context.Context) error {
 		return err
 	}
 	c.logger.Info("kubernetes plugin is installed", zap.String("output", string(out)))
+
+	cmd = exec.CommandContext(ctx, "kaytu", "login", "--api-key", c.cfg.KaytuConfig.ApiKey)
+	c.logger.Info("logging in to kaytu")
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		c.logger.Error("failed to login", zap.Error(err), zap.String("output", string(out)))
+		return err
+	}
+	c.logger.Info("logged in to kaytu", zap.String("output", string(out)))
 
 	c.logger.Info("kaytu is installed", zap.String("version", version))
 	return nil
