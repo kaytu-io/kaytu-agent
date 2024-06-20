@@ -241,7 +241,7 @@ func (c *KaytuCmd) Initialize(ctx context.Context) error {
 		return c.Initialize(ctx)
 	}
 
-	cmd = exec.CommandContext(ctx, "kaytu", "login", "--auth-token", c.cfg.KaytuConfig.AuthToken)
+	cmd = exec.CommandContext(ctx, "kaytu", "login", "--api-key", c.cfg.KaytuConfig.ApiKey)
 	c.logger.Info("logging in to kaytu")
 	out, err = cmd.CombinedOutput()
 	if err != nil {
