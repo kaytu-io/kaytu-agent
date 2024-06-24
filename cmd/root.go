@@ -37,10 +37,6 @@ var rootCmd = &cobra.Command{
 
 		logger.Info("checking kaytu installation")
 		kc := kaytuCmd.New(logger, &cfg)
-		err = kc.Initialize(ctx)
-		if err != nil {
-			return err
-		}
 
 		logger.Info("starting scheduler")
 		scheduler := scheduler.New(kc, logger)

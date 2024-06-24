@@ -43,6 +43,8 @@ func (s *Service) Start(ctx context.Context) error {
 func (s *Service) Trigger() {
 	s.logger.Info("optimization cycle triggered")
 	ctx := context.Background()
+	_ = s.kaytuCmd.Initialize(ctx)
+
 	commands := []string{"kubernetes-pods", "kubernetes-deployments", "kubernetes-statefulsets", "kubernetes-daemonsets", "kubernetes-jobs"}
 	for _, command := range commands {
 		err := s.kaytuCmd.Optimize(ctx, command)
