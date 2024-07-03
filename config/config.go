@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 )
 
+const ConfigDirectory = "/config"
+
 type PrometheusConfig struct {
 	Address string `json:"address" yaml:"address" koanf:"address"`
 

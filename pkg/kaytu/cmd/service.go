@@ -57,8 +57,7 @@ func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
 		c.logger.Error("failed to open db config", zap.Error(err))
 		return err
 	}
-
-	args := []string{"optimize", command, "--agent-mode", "--output", "json", "--agent-disabled", "true"}
+	args := []string{"optimize", command, "--agent-mode", "--output", "json", "--agent-disabled", "true", "--preferences", filepath.Join(config.ConfigDirectory, "preferences.yaml")}
 	if c.cfg.KaytuConfig.ObservabilityDays > 0 {
 		args = append(args, "--observabilityDays", fmt.Sprintf("%d", c.cfg.KaytuConfig.ObservabilityDays))
 	}
