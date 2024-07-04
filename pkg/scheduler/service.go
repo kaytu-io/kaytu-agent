@@ -20,7 +20,7 @@ func New(kaytuCmd *kaytuCmd.KaytuCmd, logger *zap.Logger) *Service {
 }
 
 func (s *Service) Start(ctx context.Context) error {
-	commands := []string{"kubernetes-pods", "kubernetes-deployments", "kubernetes-statefulsets", "kubernetes-daemonsets", "kubernetes-jobs"}
+	commands := []string{"kubernetes-pods", "kubernetes-deployments", "kubernetes-statefulsets", "kubernetes-daemonsets", "kubernetes-jobs", "kubernetes"}
 	for _, command := range commands {
 		opt, err := s.kaytuCmd.LatestOptimization(ctx, command)
 		if err != nil {
