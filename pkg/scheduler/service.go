@@ -50,7 +50,7 @@ func (s *Service) Trigger() {
 	ctx := context.Background()
 	_ = s.kaytuCmd.Initialize(ctx)
 
-	commands := []string{"kubernetes-pods", "kubernetes-deployments", "kubernetes-statefulsets", "kubernetes-daemonsets", "kubernetes-jobs"}
+	commands := []string{"kubernetes-pods", "kubernetes-deployments", "kubernetes-statefulsets", "kubernetes-daemonsets", "kubernetes-jobs", "kubernetes"}
 	for _, command := range commands {
 		err := s.kaytuCmd.Optimize(ctx, command)
 		if err != nil {
