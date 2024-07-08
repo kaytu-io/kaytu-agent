@@ -35,7 +35,7 @@ func (s *Service) Start(ctx context.Context) error {
 
 	c := cron.New()
 
-	_, err := c.AddFunc("30 1 * * *", func() { go s.Trigger() })
+	_, err := c.AddFunc("0 */6 * * *", func() { go s.Trigger() })
 	if err != nil {
 		return err
 	}
