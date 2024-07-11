@@ -163,9 +163,9 @@ func (s *Service) runOptimizationJob(ctx context.Context, job *database.Optimiza
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, s.cfg.GetOptimizationJobRunTimeout())
+	jobCtx, cancel := context.WithTimeout(ctx, s.cfg.GetOptimizationJobRunTimeout())
 	defer cancel()
-	err = s.kaytuCmd.Optimize(ctx, job.Command)
+	err = s.kaytuCmd.Optimize(jobCtx, job.Command)
 	if err != nil {
 		s.logger.Error("failed to run kaytu optimization", zap.String("command", job.Command), zap.Error(err))
 		jobStatus = database.OptimizationJobStatusFailed
