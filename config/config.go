@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const ConfigDirectory = "/config"
@@ -29,6 +30,11 @@ type Config struct {
 	GrpcPort         uint16 `json:"grpcPort" yaml:"grpcPort" koanf:"grpc_port"`
 	WorkingDirectory string `json:"workingDirectory" yaml:"workingDirectory" koanf:"working_directory"`
 
+	OptimizationCheckIntervalSeconds       int64 `json:"optimizationCheckIntervalSeconds" yaml:"optimizationCheckIntervalSeconds" koanf:"optimization_check_interval_seconds"`
+	OptimizationJobScheduleIntervalSeconds int64 `json:"optimizationJobScheduleIntervalSeconds" yaml:"optimizationJobScheduleIntervalSeconds" koanf:"optimization_job_schedule_interval_seconds"`
+	OptimizationJobRunTimeoutSeconds       int64 `json:"optimizationJobRunTimeoutSeconds" yaml:"optimizationJobRunTimeoutSeconds" koanf:"optimization_job_run_timeout_seconds"`
+	OptimizationJobQueueTimeoutSeconds     int64 `json:"optimizationJobQueueTimeoutSeconds" yaml:"optimizationJobQueueTimeoutSeconds" koanf:"optimization_job_queue_timeout_seconds"`
+
 	KaytuConfig KaytuConfig `json:"kaytuConfig" yaml:"kaytuConfig" koanf:"kaytu_config"`
 }
 
@@ -37,6 +43,11 @@ var userHomeDir, _ = os.UserHomeDir()
 var DefaultConfig = Config{
 	GrpcPort:         8001,
 	WorkingDirectory: filepath.Join(userHomeDir, ".kaytu", "agent"),
+
+	OptimizationCheckIntervalSeconds:       60,
+	OptimizationJobScheduleIntervalSeconds: 86400,
+	OptimizationJobRunTimeoutSeconds:       7200,
+	OptimizationJobQueueTimeoutSeconds:     86400,
 
 	KaytuConfig: KaytuConfig{
 		ObservabilityDays: 14,
@@ -51,5 +62,21 @@ func (c Config) GetOutputDirectory() string {
 }
 
 func (c Config) GetDBFilePath() string {
-	return filepath.Join(c.WorkingDirectory, "db.json")
+	return filepath.Join(c.WorkingDirectory, "agent-sqlite.db")
+}
+
+func (c Config) GetOptimizationCheckInterval() time.Duration {
+	return time.Duration(c.OptimizationCheckIntervalSeconds) * time.Second
+}
+
+func (c Config) GetOptimizationJobScheduleInterval() time.Duration {
+	return time.Duration(c.OptimizationJobScheduleIntervalSeconds) * time.Second
+}
+
+func (c Config) GetOptimizationJobRunTimeout() time.Duration {
+	return time.Duration(c.OptimizationJobRunTimeoutSeconds) * time.Second
+}
+
+func (c Config) GetOptimizationJobQueueTimeout() time.Duration {
+	return time.Duration(c.OptimizationJobQueueTimeoutSeconds) * time.Second
 }
