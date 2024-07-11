@@ -3,6 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	githubAPI "github.com/google/go-github/v62/github"
+	"github.com/kaytu-io/kaytu-agent/config"
+	"github.com/rogpeppe/go-internal/semver"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"os"
@@ -11,12 +15,6 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"time"
-
-	githubAPI "github.com/google/go-github/v62/github"
-	"github.com/kaytu-io/kaytu-agent/config"
-	"github.com/rogpeppe/go-internal/semver"
-	"go.uber.org/zap"
 )
 
 type KaytuCmd struct {
@@ -52,11 +50,6 @@ func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
 		return err
 	}
 
-	dbConfig, err := OpenDBConfig(ctx, c.logger, c.cfg)
-	if err != nil {
-		c.logger.Error("failed to open db config", zap.Error(err))
-		return err
-	}
 	args := []string{"optimize", command, "--agent-mode", "--output", "json", "--agent-disabled", "true", "--preferences", filepath.Join(config.ConfigDirectory, "preferences.yaml")}
 	if c.cfg.KaytuConfig.ObservabilityDays > 0 {
 		args = append(args, "--observabilityDays", fmt.Sprintf("%d", c.cfg.KaytuConfig.ObservabilityDays))
@@ -117,50 +110,8 @@ func (c *KaytuCmd) Optimize(ctx context.Context, command string) error {
 		return err
 	}
 
-	exists := false
-	for idx, op := range dbConfig.Optimizations {
-		if op.Command == command {
-			op.LastUpdate = time.Now()
-			dbConfig.Optimizations[idx] = op
-			exists = true
-			break
-		}
-	}
-	if !exists {
-		dbConfig.Optimizations = append(dbConfig.Optimizations, Optimization{
-			Command:    command,
-			LastUpdate: time.Now(),
-		})
-	}
-
-	if err := UpdateDBConfig(ctx, c.logger, c.cfg, dbConfig); err != nil {
-		c.logger.Error("failed to update db config", zap.Error(err))
-		return err
-	}
-
 	c.logger.Info("optimization finished", zap.String("command", command))
 	return os.Rename(dirtyPath, cleanPath)
-}
-
-func (c *KaytuCmd) LatestOptimization(ctx context.Context, command string) (*Optimization, error) {
-	if err := ctx.Err(); err != nil {
-		c.logger.Error("context error", zap.Error(err))
-		return nil, err
-	}
-
-	dbConfig, err := OpenDBConfig(ctx, c.logger, c.cfg)
-	if err != nil {
-		c.logger.Error("failed to open db config", zap.Error(err))
-		return nil, err
-	}
-
-	for _, op := range dbConfig.Optimizations {
-		if op.Command == command {
-			return &op, nil
-		}
-	}
-
-	return nil, nil
 }
 
 // Initialize checks if kaytu is installed and installs the latest version if it is outdated, then logs in to kaytu and installs the kubernetes plugin

@@ -1,8 +1,21 @@
 syntax = "proto3";
 
 package kaytu.agent.v1;
+
 option go_package="github.com/kaytu-io/kaytu-agent/proto/src/golang";
-import "google/protobuf/wrappers.proto";
+
+//import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message OptimizationJob {
+  uint64 id = 1;
+  string command = 2;
+  string status = 3;
+  string error_message = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
 
 message GetReportRequest {
   string command =1 ;
@@ -11,9 +24,23 @@ message GetReportResponse {
   bytes report = 1;
 }
 
+message TriggerJobRequest {
+  repeated string commands = 1;
+}
+
+message GetLatestJobsRequest {
+  repeated string commands = 1;
+}
+
+message GetLatestJobsResponse {
+  map<string, OptimizationJob> jobs = 1;
+}
+
 message PingMessage {}
 
 service Agent {
   rpc GetReport(GetReportRequest) returns (GetReportResponse) {}
   rpc Ping(PingMessage) returns (PingMessage) {}
+  rpc TriggerJob(TriggerJobRequest) returns (google.protobuf.Empty) {}
+  rpc GetLatestJobs(GetLatestJobsRequest) returns (GetLatestJobsResponse) {}
 }
