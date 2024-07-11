@@ -141,7 +141,9 @@ func (s *Service) checkForOptimizationJobs(ctx context.Context) error {
 
 	if job != nil {
 		s.runOptimizationJob(ctx, job)
+		return s.checkForOptimizationJobs(ctx)
 	}
+
 	return nil
 }
 
