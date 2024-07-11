@@ -28,7 +28,7 @@ func (s *Service) Start(ctx context.Context) error {
 		}
 		if opt == nil {
 			s.logger.Info("no previous optimization for command found, triggering optimization cycle", zap.String("command", command))
-			go s.Trigger()
+			s.Trigger()
 			break
 		}
 	}
@@ -57,4 +57,6 @@ func (s *Service) Trigger() {
 			s.logger.Error("failed to run kaytu optimization", zap.String("command", command), zap.Error(err))
 		}
 	}
+
+	s.logger.Info("optimization cycle completed")
 }
