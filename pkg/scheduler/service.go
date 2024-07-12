@@ -82,9 +82,17 @@ func (s *Service) runScheduleCycle(ctx context.Context, scheduleTicker *time.Tic
 		}
 	}()
 
+	// If there is no job for a command, enqueue it
 	for _, command := range Commands {
-		if err := s.EnqueueOptimization(ctx, command); err != nil {
-			s.logger.Error("failed to enqueue optimization job", zap.Error(err), zap.String("command", command))
+		job, err := s.optimizationJobsRepo.GetLatestOptimizationJobByCommand(ctx, command)
+		if err != nil {
+			s.logger.Error("failed to get latest optimization job by command", zap.Error(err), zap.String("command", command))
+			continue
+		}
+		if job == nil {
+			if err := s.EnqueueOptimization(ctx, command); err != nil {
+				s.logger.Error("failed to enqueue optimization job", zap.Error(err), zap.String("command", command))
+			}
 		}
 	}
 
